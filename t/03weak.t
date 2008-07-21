@@ -13,8 +13,10 @@ my $object = bless {}, "Some::Class";
 my $newref = $object;
 
 test_out( "not ok 1 - one ref" );
-test_fail( +2 );
+test_fail( +4 );
 test_err( "#   expected 1 references, found 2" );
+test_err( qr/^# Some::Class=HASH\(0x[0-9a-f]+\) is\n/ );
+test_err( qr/(?:^#.*\n){1,}/m ); # Don't be sensitive on what Devel::FindRef actually prints
 is_oneref( $object, 'one ref' );
 test_test( "two refs to object fails to be 1" );
 

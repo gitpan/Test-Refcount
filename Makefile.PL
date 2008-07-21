@@ -5,6 +5,7 @@ WriteMakefile
           'NAME' => 'Test::Refcount',
           'VERSION_FROM' => 'lib/Test/Refcount.pm',
           'PREREQ_PM' => {
+                           'Devel::FindRef' => 0,
                            'Devel::Refcount' => 0,
                            'Test::Builder' => 0,
                            'Test::Builder::Tester' => 0,

@@ -8,9 +8,12 @@ package Test::Refcount;
 use strict;
 use base qw( Test::Builder::Module );
 
-use Devel::Refcount qw( refcount );
+use Scalar::Util qw( weaken );
 
-our $VERSION = '0.01';
+use Devel::Refcount qw( refcount );
+use Devel::FindRef;
+
+our $VERSION = '0.02';
 
 our @EXPORT = qw(
    is_refcount
@@ -48,6 +51,11 @@ properly DESTROYed when it drops all of its references to it.
 This module provides two test functions to help ensure this property holds
 for an object class, so as to be polite to its callers.
 
+If the assertion fails; that is, if the actual reference count is different to
+what was expected, a trace of references to the object is printed, using
+Marc Lehmann's L<Devel::FindRef> module. See the examples below for more
+information.
+
 =cut
 
 =head1 FUNCTIONS
@@ -63,6 +71,7 @@ Test that $object has $count references to it.
 sub is_refcount($$;$)
 {
    my ( $object, $count, $name ) = @_;
+   @_ = ();
 
    my $tb = __PACKAGE__->builder;
 
@@ -72,12 +81,15 @@ sub is_refcount($$;$)
       return $ok;
    }
 
-   my $REFCNT = refcount($object) - 1; # my $object takes one
+   weaken $object; # So this reference itself doesn't show up
+
+   my $REFCNT = refcount($object);
 
    my $ok = $tb->ok( $REFCNT == $count, $name );
 
    unless( $ok ) {
       $tb->diag( "  expected $count references, found $REFCNT" );
+      $tb->diag( Devel::FindRef::track( $object ) );
    }
 
    return $ok;
@@ -100,23 +112,99 @@ sub is_oneref($;$)
 
 __END__
 
+=head1 EXAMPLE
+
+Suppose, having written a new class C<MyBall>, you now want to check that its
+constructor and methods are well-behaved, and don't leak references. Consider
+the following test script:
+ 
+ use Test::More tests => 2;
+ use Test::Refcount;
+ 
+ use MyBall;
+ 
+ my $ball = MyBall->new();
+ is_oneref( $ball, 'One reference after construct' );
+ 
+ $ball->bounce;
+
+ # Any other code here that might be part of the test script
+ 
+ is_oneref( $ball, 'One reference just before EOF' );
+
+The first assertion is just after the constructor, to check that the reference
+returned by it is the only reference to that object. This fact is important if
+we ever want C<DESTROY> to behave properly. The second call is right at the
+end of the file, just before the main scope closes. At this stage we expect
+the reference count also to be one, so that the object is properly cleaned up.
+
+Suppose, when run, this produces the following output:
+
+ 1..2
+ ok 1 - One reference after construct
+ not ok 2 - One reference just before EOF
+ #   Failed test 'One reference just before EOF'
+ #   at demo.pl line 16.
+ #   expected 1 references, found 2
+ # MyBall=ARRAY(0x817f880) is
+ # +- referenced by REF(0x82c1fd8), which is
+ # |     in the member 'self' of HASH(0x82c1f68), which is
+ # |        referenced by REF(0x81989d0), which is
+ # |           in the member 'cycle' of HASH(0x82c1f68), which was seen before.
+ # +- referenced by REF(0x82811d0), which is
+ #       in the lexical '$ball' in CODE(0x817fa00), which is
+ #          the main body of the program.
+ # Looks like you failed 1 test of 2.
+
+From this output, we can see that the constructor was well-behaved, but that a
+reference was leaked by the end of the script - the reference count was 2,
+when we expected just 1. Reading the trace output, we can see that there were
+2 references that C<Devel::FindRef> could find - one stored in the $ball
+lexical in the main program, and one stored in a HASH. Since we expected to
+find the $ball lexical variable, we know we are now looking for a leak in a
+hash somewhere in the code. From reading the test script, we can guess this
+leak is likely to be in the bounce() method. Furthermore, we know that the
+reference to the object will be stored in a HASH in a member called C<self>.
+
+By reading the code which implements the bounce() method, we can see this is
+indeed the case:
+
+ sub bounce
+ {
+    my $self = shift;
+    my $cycle = { self => $self };
+    $cycle->{cycle} = $cycle;
+ }
+
+From reading the C<Devel::FindRef> output, we find that the HASH this object
+is referenced in also contains a reference to itself, in a member called
+C<cycle>. This comes from the last line in this function, a line that
+purposely created a cycle, to demonstrate the point. While a real program
+probably wouldn't do anything quite this obvious, the trace would still be
+useful in finding the likely cause of the leak.
+
 =head1 BUGS
 
 =over 4
 
-=item * Values not in variables
+=item * Temporaries created on the stack
 
-Code such as
+Code which creates temporaries on the stack, to be released again when the
+called function returns does not work correctly on perl 5.8 (and probably
+before). Examples such as
 
  is_oneref( [] );
 
-breaks on perl 5.8. Passing a variable (e.g)
+may fail and claim a reference count of 2 instead.
+
+Passing a variable such as
 
  my $array = [];
  is_oneref( $array );
 
-works fine. This limitation should not affect the behaviour of test scripts
-that use this module.
+works fine. Because of the intention of this test module; that is, to assert
+reference counts on some object stored in a variable during the lifetime of
+the test script, this is unlikely to cause any problems.
 
 =back
 

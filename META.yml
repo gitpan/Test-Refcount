@@ -1,6 +1,6 @@
 ---
 name: Test-Refcount
-version: 0.03
+version: 0.04
 author:
   - 'Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>'
 abstract: assert reference counts on objects
@@ -17,7 +17,7 @@ build_requires:
 provides:
   Test::Refcount:
     file: lib/Test/Refcount.pm
-    version: 0.03
+    version: 0.04
 generated_by: Module::Build version 0.280801
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

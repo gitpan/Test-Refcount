@@ -13,7 +13,7 @@ use Scalar::Util qw( weaken );
 use Devel::Refcount qw( refcount );
 use Devel::FindRef;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 our @EXPORT = qw(
    is_refcount

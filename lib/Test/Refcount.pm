@@ -6,6 +6,7 @@
 package Test::Refcount;
 
 use strict;
+use warnings;
 use base qw( Test::Builder::Module );
 
 use Scalar::Util qw( weaken );
@@ -13,7 +14,7 @@ use Scalar::Util qw( weaken );
 use Devel::Refcount qw( refcount );
 use Devel::FindRef;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 our @EXPORT = qw(
    is_refcount
@@ -210,4 +211,4 @@ the test script, this is unlikely to cause any problems.
 
 =head1 AUTHOR
 
-Paul Evans E<lt>leonerd@leonerd.org.ukE<gt>
+Paul Evans <leonerd@leonerd.org.uk>

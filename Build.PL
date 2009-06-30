@@ -9,6 +9,7 @@ my $build = Module::Build->new
    requires => {
                   'Devel::FindRef' => 0,
                   'Devel::Refcount' => 0,
+                  'Scalar::Util' => 0,
                   'Test::Builder' => 0,
    },
    build_requires => {
@@ -17,6 +18,8 @@ my $build = Module::Build->new
                      },
    license => 'perl',
    create_makefile_pl => 'traditional',
+   create_license => 1,
+   create_readme  => 1,
   );
   
 $build->create_build_script;

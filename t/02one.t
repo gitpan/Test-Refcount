@@ -6,6 +6,8 @@ use Test::Builder::Tester tests => 3;
 
 use Test::Refcount;
 
+use constant HAVE_DEVEL_FINDREF => eval { require Devel::FindRef };
+
 my $anon = [];
 
 test_out( "ok 1 - anon ARRAY ref" );
@@ -23,7 +25,7 @@ my $newref = $object;
 test_out( "not ok 1 - one ref" );
 test_fail( +4 );
 test_err( "#   expected 1 references, found 2" );
-test_err( qr/^# Some::Class=HASH\(0x[0-9a-f]+\) (?:\[refcount 2\] )?is\n/ );
-test_err( qr/(?:^#.*\n){1,}/m ); # Don't be sensitive on what Devel::FindRef actually prints
+test_err( qr/^# Some::Class=HASH\(0x[0-9a-f]+\) (?:\[refcount 2\] )?is\n/ ) if HAVE_DEVEL_FINDREF;
+test_err( qr/(?:^#.*\n){1,}/m ) if HAVE_DEVEL_FINDREF; # Don't be sensitive on what Devel::FindRef actually prints
 is_oneref( $object, 'one ref' );
 test_test( "two refs to object fails to be 1" );

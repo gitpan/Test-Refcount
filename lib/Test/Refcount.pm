@@ -1,7 +1,7 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2008 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008,2009 -- leonerd@leonerd.org.uk
 
 package Test::Refcount;
 
@@ -12,9 +12,8 @@ use base qw( Test::Builder::Module );
 use Scalar::Util qw( weaken );
 
 use Devel::Refcount qw( refcount );
-use Devel::FindRef;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 our @EXPORT = qw(
    is_refcount
@@ -53,8 +52,9 @@ This module provides two test functions to help ensure this property holds
 for an object class, so as to be polite to its callers.
 
 If the assertion fails; that is, if the actual reference count is different to
-what was expected, a trace of references to the object is printed, using
-Marc Lehmann's L<Devel::FindRef> module. See the examples below for more
+what was expected, a trace of references to the object can be printed, if
+Marc Lehmann's L<Devel::FindRef> module is installed. This may assist the
+developer in finding where the references are. See the examples below for more
 information.
 
 =cut
@@ -90,7 +90,10 @@ sub is_refcount($$;$)
 
    unless( $ok ) {
       $tb->diag( "  expected $count references, found $REFCNT" );
-      $tb->diag( Devel::FindRef::track( $object ) );
+
+      if( eval { require Devel::FindRef } ) {
+         $tb->diag( Devel::FindRef::track( $object ) );
+      }
    }
 
    return $ok;
@@ -139,7 +142,8 @@ we ever want C<DESTROY> to behave properly. The second call is right at the
 end of the file, just before the main scope closes. At this stage we expect
 the reference count also to be one, so that the object is properly cleaned up.
 
-Suppose, when run, this produces the following output:
+Suppose, when run, this produces the following output (presuming
+C<Devel::FindRef> is available):
 
  1..2
  ok 1 - One reference after construct
@@ -183,6 +187,18 @@ C<cycle>. This comes from the last line in this function, a line that
 purposely created a cycle, to demonstrate the point. While a real program
 probably wouldn't do anything quite this obvious, the trace would still be
 useful in finding the likely cause of the leak.
+
+If C<Devel::FindRef> is unavailable, then these detailed traces will not be
+produced. The basic reference count testing will still take place, but a
+smaller message will be produced:
+
+ 1..2
+ ok 1 - One reference after construct
+ not ok 2 - One reference just before EOF
+ #   Failed test 'One reference just before EOF'
+ #   at demo.pl line 16.
+ #   expected 1 references, found 2
+ # Looks like you failed 1 test of 2.
 
 =head1 BUGS
 

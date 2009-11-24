@@ -1,5 +1,10 @@
 Revision history for Test-Refcount
 
+0.06    CHANGES:
+         * Optionally use Devel::FindRef but don't depend on it being
+           installed. Removes the need to install it on smoke testers and have
+           it fail.
+
 0.05    CHANGES:
          * Added 'use warnings'
          * Various small updates to keep CPANTS happy

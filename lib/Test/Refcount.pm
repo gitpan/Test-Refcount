@@ -1,7 +1,7 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2008,2009 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
 
 package Test::Refcount;
 
@@ -10,10 +10,9 @@ use warnings;
 use base qw( Test::Builder::Module );
 
 use Scalar::Util qw( weaken );
+use B qw( svref_2object );
 
-use Devel::Refcount qw( refcount );
-
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 our @EXPORT = qw(
    is_refcount
@@ -84,7 +83,7 @@ sub is_refcount($$;$)
 
    weaken $object; # So this reference itself doesn't show up
 
-   my $REFCNT = refcount($object);
+   my $REFCNT = svref_2object($object)->REFCNT;
 
    my $ok = $tb->ok( $REFCNT == $count, $name );
 
@@ -110,11 +109,6 @@ sub is_oneref($;$)
    splice( @_, 1, 0, ( 1 ) );
    goto &is_refcount;
 }
-
-# Keep perl happy; keep Britain tidy
-1;
-
-__END__
 
 =head1 EXAMPLE
 
@@ -225,6 +219,15 @@ the test script, this is unlikely to cause any problems.
 
 =back
 
+=head1 ACKNOWLEDGEMENTS
+
+Peter Rabbitson <ribasushi@cpan.org> - for suggesting using core's C<B>
+instead of C<Devel::Refcount> to obtain refcounts
+
 =head1 AUTHOR
 
 Paul Evans <leonerd@leonerd.org.uk>
+
+=cut
+
+0x55AA;

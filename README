@@ -146,6 +146,10 @@ BUGS
         during the lifetime of the test script, this is unlikely to cause
         any problems.
 
+ACKNOWLEDGEMENTS
+    Peter Rabbitson <ribasushi@cpan.org> - for suggesting using core's "B"
+    instead of "Devel::Refcount" to obtain refcounts
+
 AUTHOR
     Paul Evans <leonerd@leonerd.org.uk>
 

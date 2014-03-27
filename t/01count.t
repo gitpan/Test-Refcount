@@ -33,10 +33,16 @@ is_refcount( $object, 2, 'two refs' );
 test_test( "two refs to object succeeds" );
 
 test_out( "not ok 1 - one ref" );
-test_fail( +4 );
+test_fail( +10 );
 test_err( "#   expected 1 references, found 2" );
 test_err( qr/^# Some::Class=HASH\(0x[0-9a-f]+\) (?:\[refcount 2\] )?is\n/ ) if HAVE_DEVEL_FINDREF;
-test_err( qr/(?:^#.*\n){1,}/m ) if HAVE_DEVEL_FINDREF; # Don't be sensitive on what Devel::FindRef actually prints
+if( HAVE_DEVEL_FINDREF ) {
+   test_err( qr/(?:^#.*\n){1,}/m ); # Don't be sensitive on what Devel::FindRef actually prints
+}
+elsif( Test::Refcount::HAVE_DEVEL_MAT_DUMPER ) {
+   test_err( qr/^# SV address is 0x[0-9a-f]+\n/ );
+   test_err( qr/^# Writing heap dump to \S+\n/ );
+}
 is_refcount( $object, 1, 'one ref' );
 test_test( "two refs to object fails to be 1" );
 
@@ -61,3 +67,10 @@ undef $otherobject;
 test_out( "ok 1 - undefed other ref to object" );
 is_refcount( $object, 1, 'undefed other ref to object' );
 test_test( "object with another reference undefed succeeds" );
+
+END {
+   # Clean up Devel::MAT dumpfile
+   my $pmat = $0;
+   $pmat =~ s/\.t$/-1.pmat/;
+   unlink $pmat if -f $pmat;
+}

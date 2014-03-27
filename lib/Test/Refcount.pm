@@ -1,7 +1,7 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2008-2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2008-2014 -- leonerd@leonerd.org.uk
 
 package Test::Refcount;
 
@@ -9,15 +9,17 @@ use strict;
 use warnings;
 use base qw( Test::Builder::Module );
 
-use Scalar::Util qw( weaken );
+use Scalar::Util qw( weaken refaddr );
 use B qw( svref_2object );
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 our @EXPORT = qw(
    is_refcount
    is_oneref
 );
+
+use constant HAVE_DEVEL_MAT_DUMPER => defined eval { require Devel::MAT::Dumper };
 
 =head1 NAME
 
@@ -51,10 +53,27 @@ This module provides two test functions to help ensure this property holds
 for an object class, so as to be polite to its callers.
 
 If the assertion fails; that is, if the actual reference count is different to
-what was expected, a trace of references to the object can be printed, if
-Marc Lehmann's L<Devel::FindRef> module is installed. This may assist the
-developer in finding where the references are. See the examples below for more
-information.
+what was expected, either of the following two modules may be used to assist
+the developer in finding where the references are.
+
+=over 4
+
+=item *
+
+If L<Devel::FindRef> module is installed, a reverse-references trace is
+printed to the test output.
+
+=item *
+
+If L<Devel::MAT> is installed, this test module will use it to dump the state
+of the memory after a failure. It will create a F<.pmat> file named the same
+as the unit test, but with the trailing F<.t> suffix replaced with
+F<-TEST.pmat> where C<TEST> is the number of the test that failed (in case
+there was more than one).
+
+=back
+
+See the examples below for more information.
 
 =cut
 
@@ -92,6 +111,18 @@ sub is_refcount($$;$)
 
       if( eval { require Devel::FindRef } ) {
          $tb->diag( Devel::FindRef::track( $object ) );
+      }
+      elsif( HAVE_DEVEL_MAT_DUMPER ) {
+         my $file = $0;
+         my $num = $tb->current_test;
+
+         # Trim the .t off first then append -$num.pmat, in case $0 wasn't a .t file
+         $file =~ s/\.(?:t|pm|pl)$//;
+         $file .= "-$num\.pmat";
+
+         $tb->diag( sprintf "SV address is 0x%x", refaddr $object );
+         $tb->diag( "Writing heap dump to $file" );
+         Devel::MAT::Dumper::dump( $file );
       }
    }
 

@@ -12,3 +12,4 @@ t/02one.t
 t/03weak.t
 t/04reftypes.t
 t/99pod.t
+META.json

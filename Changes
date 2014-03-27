@@ -1,5 +1,10 @@
 Revision history for Test-Refcount
 
+0.08    2014/03/27 16:10:38
+        [CHANGES]
+         * Optional integration with Devel::MAT if available, to heapdump the
+           running unit test for later analysis
+
 0.07    CHANGES:
          * Use pureperl core B module rather than Devel::Refcount, for
            avoiding XS in the deptree of a Test module
